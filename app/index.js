@@ -20,5 +20,6 @@ if (!gotTheLock) {
 	app.on('quit', () => console.log('quit'));
 	app.on('renderer-process-crashed', (...args) => console.log('renderer-process-crashed', args));
 	app.on('will-quit', () => console.log('will-quit'));
+	app.on('desktop-capturer-get-sources', () => console.log('desktop-capturer-get-sources'));
 	app.on('certificate-error', certificate.onAppCertificateError);
 }

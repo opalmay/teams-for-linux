@@ -148,7 +148,8 @@ function createWindow() {
 			nativeWindowOpen: true,
 			plugins: true,
 			nodeIntegration: false,
-			// nodeIntegrationInWorker: true
+			// nodeIntegrationInWorker: true,
+			// sandbox: false
 		},
 	});
 
