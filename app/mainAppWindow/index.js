@@ -1,5 +1,5 @@
 
-const { shell, BrowserWindow } = require('electron');
+const { shell, ipcMain, BrowserWindow } = require('electron');
 const windowStateKeeper = require('electron-window-state');
 const path = require('path');
 const login = require('../login');
@@ -13,18 +13,35 @@ let aboutBlankRequestCount = 0;
 
 let window = null;
 
-exports.onAppReady = async function onAppReady() {
+exports.onAppReady = function onAppReady() {
 	window = createWindow();
-	await clearCache(window.webContents.session);
-	await clearStorageData(window.webContents.session);
 
-	// window.webContents.session.setPermissionRequestHandler((...args) => {
-	// 		console.log('setPermissionRequestHandler', args);
-	// 		return true;
-	// 	});
-	window.webContents.session.setPermissionCheckHandler((...args) => {
-		console.log('setPermissionCheckHandler', args);
-		return true;
+	ipcMain.on('captureScreen', (event, filename) => {
+		console.log('captureScreen called', event, filename);
+		// let screenCaptureProvider = module.require('./screenCaptureProvider');
+        // screenCaptureProvider.getScreenCapture(filename, true)
+        //     .catch(() => {
+        //         this._loggingService.logError('Error capturing screen');
+        //     });
+	});
+
+	ipcMain.on('setSkypeCookie', (event, skypeCookie) => {
+        try {
+            window.webContents.session.cookies.set({ url: 'https://api.asm.skype.com', domain: '.asm.skype.com', name: 'skypetoken_asm', value: skypeCookie },
+                (error, cookies) => {
+                    if (error) {
+                        // TODO sanitize log and error
+                        console.error('Error saving cookie');
+                    };
+                });
+        } catch (e) {
+            // TODO sanitize log and error
+            console.error('Unable set cookie due to error');
+        }
+    });
+
+	window.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+		console.log('did-fail-load', event, errorCode, errorDescription, validatedURL, isMainFrame);
 	});
 
 	new Menus(window, config, iconPath);
@@ -146,8 +163,9 @@ function createWindow() {
 			partition: config.partition,
 			preload: path.join(__dirname, '..', 'browser', 'index.js'),
 			nativeWindowOpen: true,
-			plugins: true,
+			plugins: false, // true
 			nodeIntegration: false,
+			webSecurity: true, // none
 			// nodeIntegrationInWorker: true,
 			// sandbox: false
 		},
@@ -159,12 +177,4 @@ function createWindow() {
 	};
 
 	return window;
-}
-
-const clearCache = (session) => {
-	new Promise((resolve) => session.clearCache(resolve(console.log("session cache cleared"))));
-}
-
-const clearStorageData = (session) => {
-	new Promise((resolve) => session.clearStorageData({ storages: ['appcache']} , resolve(console.log("appcache cleared")) ));
 }
