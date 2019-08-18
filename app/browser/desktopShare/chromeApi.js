@@ -4,6 +4,7 @@ const { selectSource } = require('./captureSelector');
 window.chrome = {
 	'runtime': {
 		'sendMessage': function (extensionId, messageName, callback) {
+			console.log(extensionId, messageName, callback);
 			if (messageName == 'version') {
 				console.log('version');
 				callback({ version: '1.1.0' });

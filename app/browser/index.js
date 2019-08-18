@@ -20,6 +20,10 @@
 
 	new ActivityManager(ipcRenderer, iconPath).start();
 
+	window.desktop = {
+        ipcRenderer: ipcRenderer
+    };
+
 	if (config.enableDesktopNotificationsHack) {
 		pageTitleNotifications(ipcRenderer);
 	}
@@ -34,6 +38,12 @@
 				let injector = angular.element(document).injector();
 
 				if(injector) {
+					window.desktop = {
+						ipcRenderer: ipcRenderer
+					};
+					window.electronSafeIpc =  ipcRenderer;
+					window.hasCallMonitorVideoRendererForwarding =true;
+
 					enableChromeVideoAudioMeetings(injector);
 					disablePromoteStuff(injector);
 

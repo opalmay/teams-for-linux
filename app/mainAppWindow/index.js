@@ -46,6 +46,10 @@ exports.onAppReady = function onAppReady() {
 
 	new Menus(window, config, iconPath);
 
+	window.webContents.on('ipc-message', (...args) => console.log(args));
+	window.webContents.on('ipc-message-sync', (...args) => console.log(args));
+	window.webContents.on('desktop-capturer-get-sources', (...args) => console.log(args));
+
 	window.on('page-title-updated', (event, title) => {
 		window.webContents.send('page-title', title);
 	});
@@ -166,7 +170,7 @@ function createWindow() {
 			plugins: false, // true
 			nodeIntegration: false,
 			webSecurity: true, // none
-			// nodeIntegrationInWorker: true,
+			nodeIntegrationInWorker: true,
 			// sandbox: false
 		},
 	});
