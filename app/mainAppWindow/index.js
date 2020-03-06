@@ -16,29 +16,29 @@ let window = null;
 exports.onAppReady = function onAppReady() {
 	window = createWindow();
 
-	ipcMain.on('captureScreen', (event, filename) => {
-		console.log('captureScreen called', event, filename);
-		// let screenCaptureProvider = module.require('./screenCaptureProvider');
-        // screenCaptureProvider.getScreenCapture(filename, true)
-        //     .catch(() => {
-        //         this._loggingService.logError('Error capturing screen');
-        //     });
-	});
+	// ipcMain.on('captureScreen', (event, filename) => {
+	// 	console.log('captureScreen called', event, filename);
+	// 	// let screenCaptureProvider = module.require('./screenCaptureProvider');
+    //     // screenCaptureProvider.getScreenCapture(filename, true)
+    //     //     .catch(() => {
+    //     //         this._loggingService.logError('Error capturing screen');
+    //     //     });
+	// });
 
-	ipcMain.on('setSkypeCookie', (event, skypeCookie) => {
-        try {
-            window.webContents.session.cookies.set({ url: 'https://api.asm.skype.com', domain: '.asm.skype.com', name: 'skypetoken_asm', value: skypeCookie },
-                (error, cookies) => {
-                    if (error) {
-                        // TODO sanitize log and error
-                        console.error('Error saving cookie');
-                    };
-                });
-        } catch (e) {
-            // TODO sanitize log and error
-            console.error('Unable set cookie due to error');
-        }
-    });
+	// ipcMain.on('setSkypeCookie', (event, skypeCookie) => {
+    //     try {
+    //         window.webContents.session.cookies.set({ url: 'https://api.asm.skype.com', domain: '.asm.skype.com', name: 'skypetoken_asm', value: skypeCookie },
+    //             (error, cookies) => {
+    //                 if (error) {
+    //                     // TODO sanitize log and error
+    //                     console.error('Error saving cookie');
+    //                 };
+    //             });
+    //     } catch (e) {
+    //         // TODO sanitize log and error
+    //         console.error('Unable set cookie due to error');
+    //     }
+    // });
 
 	window.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
 		console.log('did-fail-load', event, errorCode, errorDescription, validatedURL, isMainFrame);
@@ -46,9 +46,9 @@ exports.onAppReady = function onAppReady() {
 
 	new Menus(window, config, iconPath);
 
-	window.webContents.on('ipc-message', (...args) => console.log(args));
-	window.webContents.on('ipc-message-sync', (...args) => console.log(args));
-	window.webContents.on('desktop-capturer-get-sources', (...args) => console.log(args));
+	// window.webContents.on('ipc-message', (...args) => console.log(args));
+	// window.webContents.on('ipc-message-sync', (...args) => console.log(args));
+	// window.webContents.on('desktop-capturer-get-sources', (...args) => console.log(args));
 
 	window.on('page-title-updated', (event, title) => {
 		window.webContents.send('page-title', title);
@@ -60,7 +60,7 @@ exports.onAppReady = function onAppReady() {
 
 	window.webContents.on('new-window', onNewWindow);
 
-	window.webContents.session.webRequest.onBeforeRequest(['http*'], onBeforeRequestHandler);
+	// window.webContents.session.webRequest.onBeforeRequest(['http*'], onBeforeRequestHandler);
 
 	login.handleLoginDialogTry(window);
 	if (config.onlineOfflineReload) {
@@ -86,20 +86,43 @@ exports.onAppReady = function onAppReady() {
 		window = null;
 	});
 
-	window.loadURL(config.url);
+	url = processArgs(process.argv)
+	window.loadURL( url ? url:config.url);
 
 	if (config.webDebug) {
 		window.openDevTools();
 	}
 }
 
-exports.onAppSecondInstance = function onAppSecondInstance(args) {
+exports.onAppSecondInstance = function onAppSecondInstance(event, args) {
 	console.log('second-instance started');
 	if (window) {
-		console.log('focusing on window');
-		if (window.isMinimized()) window.restore();
-		window.focus();
-		window.webContents.send('openUrl', args[0]);
+		event.preventDefault();
+		url = processArgs(args)
+		if (url) {
+			window.loadURL(url)
+		} else {
+			if (window.isMinimized()) window.restore();
+			window.focus();
+		}
+	}
+}
+
+function processArgs(args) {
+	console.debug("processArgs", args);
+	for (const arg of args) {
+		if (arg.startsWith('https://teams.microsoft.com/l/meetup-join/')) {
+			console.log('meetup-join argument received with https protocol');
+			window.show()
+			return arg
+		}
+		if (arg.startsWith('msteams:/l/meetup-join/')) {
+			console.log('meetup-join argument received with msteams protocol');
+			window.show()
+			pathMeetup = arg.substring(8, arg.length)
+			url = config.url + pathMeetup
+			return url
+		}
 	}
 }
 
@@ -121,7 +144,6 @@ function onBeforeRequestHandler(details, callback) {
 function onNewWindow(event, url, frame, disposition, options) {
 	if (url.startsWith('https://teams.microsoft.com/l/meetup-join')) {
 		event.preventDefault();
-		window.loadURL(url);
 	} else if (url === 'about:blank') {
 		event.preventDefault();
 		// Increment the counter
